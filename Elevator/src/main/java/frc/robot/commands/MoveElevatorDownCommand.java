@@ -19,4 +19,9 @@ public class MoveElevatorDownCommand extends CommandBase {
     double targetHeight = elevator.getTargetHeight() - targetHeightIncrement;
     elevator.setTargetHeight(targetHeight);
   }
+
+  @Override
+  public boolean isFinished() {
+    return elevator.atTargetHeight();
+  }
 }
