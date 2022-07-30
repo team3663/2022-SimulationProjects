@@ -61,8 +61,8 @@ public class ElevatorSubsystem extends SubsystemBase {
     motor.configPeakOutputForward(1);
     motor.configPeakOutputReverse(-1);
 
-    motor.configMotionCruiseVelocity(Units.feetToMeters(6) * SENSOR_VELOCITY_FACTOR);
-    motor.configMotionAcceleration(Units.feetToMeters(12) * SENSOR_VELOCITY_FACTOR);
+    motor.configMotionCruiseVelocity(Units.degreesToRadians(5) * SENSOR_VELOCITY_FACTOR);
+    motor.configMotionAcceleration(Units.degreesToRadians(10) * SENSOR_VELOCITY_FACTOR);
 
     sim = new ElevatorSim(DCMotor.getFalcon500(2), GEARING, CARRIAGE_MASS, DRUM_RADIUS, MIN_HEIGHT, MAX_HEIGHT);
 

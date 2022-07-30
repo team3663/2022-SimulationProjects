@@ -1,4 +1,28 @@
 {
+  "HALProvider": {
+    "Other Devices": {
+      "Talon FX[1]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[1]/Fwd Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[1]/Integrated Sensor": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX[1]/Rev Limit": {
+        "header": {
+          "open": true
+        }
+      }
+    }
+  },
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
@@ -19,6 +43,14 @@
     "Plot <0>": {
       "plots": [
         {
+          "axis": [
+            {
+              "lockMin": true
+            },
+            {
+              "lockMin": true
+            }
+          ],
           "height": 338,
           "series": [
             {
@@ -38,8 +70,18 @@
                 1.0
               ],
               "id": "NT:/Shuffleboard/arm/target angle"
+            },
+            {
+              "color": [
+                0.3333333432674408,
+                0.658823549747467,
+                0.4078431725502014,
+                1.0
+              ],
+              "id": "CANEncoder:Talon FX[1]/Integrated Sensor-position"
             }
-          ]
+          ],
+          "yaxis2": true
         }
       ]
     }
