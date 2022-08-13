@@ -1,18 +1,19 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.DemandType;
 import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.TalonFXSimCollection;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N7;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -32,8 +33,9 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private final WPI_TalonFX rightMotor;
   private final AnalogGyro gyro;
 
-  private final DifferentialDriveOdometry odometry;
   private final Field2d field;
+  private DifferentialDriveOdometry odometry;
+  private DifferentialDriveKinematics kinematics;
 
   private final AnalogGyroSim gyroSim;
   private final DifferentialDrivetrainSim driveSim;
@@ -44,6 +46,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private static final double WHEEL_RADIUS = Units.inchesToMeters(3);
   private static final double MOMENT_OF_INERTIA = 7.5;
   private static final Matrix<N7, N1> SD = VecBuilder.fill(0.001, 0.001, 0.001, 0.1, 0.1, 0.005, 0.005);
+
+  private static final double MAX_VELOCITY = 12 / GEARING * DCMotor.getFalcon500(2).KvRadPerSecPerVolt * WHEEL_RADIUS;
 
   private static final double kP = 0.5;
   private static final int PRIMARY_PID = 0;
@@ -67,6 +71,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
     rightMotor.config_kP(SLOT_INDEX, kP);
 
     odometry = new DifferentialDriveOdometry(new Rotation2d());
+    kinematics = new DifferentialDriveKinematics(TRACKWIDTH);
     field = new Field2d();
 
     driveSim = new DifferentialDrivetrainSim(DCMotor.getFalcon500(2), GEARING, MOMENT_OF_INERTIA, MASS, WHEEL_RADIUS, TRACKWIDTH, SD);
@@ -78,9 +83,15 @@ public class DrivetrainSubsystem extends SubsystemBase {
     tab.addNumber("right pose", () -> getRightPosition());
   }
 
-  public void drive(double leftSpeed, double rightSpeed) {
-    this.leftSpeed = leftSpeed;
-    this.rightSpeed = rightSpeed;
+  public void drive(double leftPercentOutput, double rightPercentOutput) {
+    leftSpeed = leftPercentOutput * MAX_VELOCITY;
+    rightSpeed = rightPercentOutput * MAX_VELOCITY;
+  }
+
+  public void drive(ChassisSpeeds chassisSpeeds) {
+    DifferentialDriveWheelSpeeds wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
+    leftSpeed = wheelSpeeds.leftMetersPerSecond;
+    rightSpeed = wheelSpeeds.rightMetersPerSecond;
   }
 
   public double getLeftPosition() {
@@ -91,10 +102,18 @@ public class DrivetrainSubsystem extends SubsystemBase {
     return rightMotor.getSelectedSensorPosition() / SENSOR_POSITION_FACTOR;
   }
 
+  public Pose2d getPosition() {
+    return odometry.getPoseMeters();
+  }
+
+  public void resetPose() {
+    odometry.resetPosition(new Pose2d(), gyro.getRotation2d());
+  }
+
   @Override
   public void periodic() {
-    leftMotor.set(ControlMode.PercentOutput, leftSpeed);
-    rightMotor.set(ControlMode.PercentOutput, rightSpeed);
+    leftMotor.set(ControlMode.Velocity, leftSpeed * SENSOR_VELOCITY_FACTOR, DemandType.ArbitraryFeedForward, leftSpeed / MAX_VELOCITY);
+    rightMotor.set(ControlMode.Velocity, rightSpeed * SENSOR_VELOCITY_FACTOR, DemandType.ArbitraryFeedForward, rightSpeed / MAX_VELOCITY);
 
     odometry.update(gyro.getRotation2d(), getLeftPosition(), getRightPosition());
     field.setRobotPose(odometry.getPoseMeters());
@@ -118,6 +137,6 @@ public class DrivetrainSubsystem extends SubsystemBase {
     leftSimCollection.setIntegratedSensorVelocity((int)leftVelocity);
     rightSimCollection.setIntegratedSensorVelocity((int)rightVelocity);
 
-    gyroSim.setAngle(driveSim.getHeading().getDegrees());
+    gyroSim.setAngle(driveSim.getHeading().getDegrees()); //
   }
 }
